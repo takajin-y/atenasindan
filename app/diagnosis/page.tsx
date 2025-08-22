@@ -3,14 +3,14 @@ import { useMemo, useState } from "react";
 
 /** MVP用の簡易コンフィグ（後でV4 JSONに差し替えます） */
 const CONFIG = {
-  base: 38000,
-  avg: 45000,
+  base: 39000,
+  avg: 63000,
   weights: {
-    costume: { high: 8000, medium: 3000, low: 0, unknown: 0 },
+    costume: { high: 27500, medium: 9000, low: 1500, unknown: 0 },
     dataAll: { yes: 7000, maybe: 3000, no: 0 },
-    product: { panel: 6000, book: 12000, other: 4000 },
-    bookVolume: { lite: 0, normal: 5000, big: 12000 },
-    familyCostume: { true: 8000, false: 0 },
+    product: { panel: 20000, book: 40000, other: 10000 },
+    bookVolume: { lite: 0, normal: 12000, big: 24000 },
+    familyCostume: { true: 20000, false: 0 },
   },
 };
 
