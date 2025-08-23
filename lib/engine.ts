@@ -31,8 +31,13 @@ export function findContradictions(a: Answers): string[] {
 export function missingKeys(a: Answers): (keyof Answers)[] {
   const base = [...REQUIRED_KEYS];
   if (a.product === "book") base.splice(3, 0, "bookVolume"); // familyCostumeの前に差し込む
-  return base.filter(k => a[k] === undefined || a[k] === null || a[k] === "");
-}
+  return base.filter((k) => {
+     const v = a[k];
+     if (v === undefined || v === null) return true;          // 未回答
+     if (typeof v === "string" && v.trim() === "") return true; // 文字列なら空文字も未回答扱い
+     return false;                                            // それ以外は回答済み
+   });
+ }
 
 /** “次に聞くべき項目” を決め、カード候補を生成（UIに出す材料） */
 export function nextQuestion(a: Answers) {
