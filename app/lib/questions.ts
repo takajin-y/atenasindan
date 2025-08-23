@@ -1,82 +1,63 @@
-// lib/v4Adapter.ts
-import V4 from "@/configs/v4.json";
-
-// /diagnosis で集める回答（MVP版）
-export type Answers = {
-  costume?: "high" | "medium" | "low" | "unknown";
-  dataAll?: "yes" | "maybe" | "no";
-  product?: "panel" | "book" | "other";
-  bookVolume?: "lite" | "normal" | "big";
-  familyCostume?: boolean;
-  support?: "A" | "B" | "C"; // 仕上がり/着付け+ヘア/着替えのみ
-  vibe?: "classic" | "natural" | "art";
-  concern?: "mood" | "budget" | "outfit" | "none";
+export type AnswerValue = string | boolean;
+export type QA = {
+  id: string;
+  text: string;
+  dependsOn?: { key: string; value: AnswerValue };
+  options: { key: string; label: string; value: AnswerValue }[];
 };
 
-const GENRE_KEY = "753-3" as const; // MVPは七五三3歳に固定（後で拡張OK）
-
-function getBaseAnchors() {
-  const baseFees = V4.baseFees;
-  const min = baseFees.ateCollection;
-  const avg = V4.baseFees.legacy["gold"];
-  const max = V4.baseFees.legacy["platinum"];
-  return { min, avg, max };
-}
-
-function genreAddonBySupport(support?: "A" | "B" | "C") {
-  const g = (V4 as any).genreAddons?.[GENRE_KEY];
-  if (!g) return 0;
-  if (support === "A") return g.A ?? 0;
-  if (support === "B") return g.B ?? 0;
-  if (support === "C") return g.C ?? 0;
-  return g.B ?? 0; // 未回答はB寄り
-}
-
-function familyCostumeAdd(family?: boolean) {
-  return family ? 8000 : 0; // MVP近似。後で adultDressing 連動に置換OK
-}
-
-function productAdd(product?: "panel" | "book" | "other", bookVol?: "lite" | "normal" | "big") {
-  if (product === "book") {
-    if (bookVol === "big") return 12000;
-    if (bookVol === "normal") return 5000;
-    return 0;
-  }
-  if (product === "panel") return 6000;
-  return 4000; // other
-}
-
-function dataAllAdd(dataAll?: "yes" | "maybe" | "no") {
-  if (dataAll === "yes") return 7000;
-  if (dataAll === "maybe") return 3000;
-  return 0;
-}
-
-export function estimateRangeFromV4(a: Answers) {
-  const anchors = getBaseAnchors();
-  const addon = genreAddonBySupport(a.support);
-
-  let add = 0;
-  add += familyCostumeAdd(a.familyCostume);
-  add += productAdd(a.product, a.bookVolume);
-  add += dataAllAdd(a.dataAll);
-
-  const vibeCoef = a.vibe === "art" ? 0.10 : a.vibe === "natural" ? 0.03 : 0;
-  const hesitationCoef = a.costume === "unknown" ? 0.05 : 0;
-
-  const min = anchors.min + addon;
-  const avg = Math.round(anchors.avg + addon + add * (0.7 + vibeCoef));
-  const max = Math.round(anchors.max + addon + add * (0.9 + hesitationCoef) + 5000);
-
-  return { min, avg, max };
-}
-
-export function talkingPointsFromV4(a: Answers) {
-  const pts: string[] = [];
-  pts.push("ご家族がリラックスできる自然な表情づくり");
-  if (a.support === "B") pts.push("着付け・ヘアを含めた一貫サポート");
-  if (a.product === "book") pts.push("アルバム設計（ページ構成と世界観の統一）");
-  if (a.familyCostume) pts.push("ご家族衣装コーデと全体トーン合わせ");
-  if (a.concern === "mood") pts.push("人見知り・ご機嫌配慮の段取り（泣いてもOK）");
-  return pts;
-}
+export const flow753_3yo_girl: QA[] = [
+  { id: "support", text: "お支度について教えてください", options: [
+    { key: "A", label: "仕上がり来店（美容なし）", value: "A" },
+    { key: "B", label: "着付け＆ヘアセット込み", value: "B" },
+    { key: "C", label: "着替えのみ", value: "C" },
+  ]},
+  { id: "costume", text: "衣装にはどのくらいこだわりたいですか？", options: [
+    { key: "high", label: "こだわりたい！", value: "high" },
+    { key: "medium", label: "そこそこ", value: "medium" },
+    { key: "low", label: "特にない", value: "low" },
+    { key: "unknown", label: "迷ってます…", value: "unknown" },
+  ]},
+  { id: "dataAll", text: "全データは欲しいですか？", options: [
+    { key: "yes", label: "欲しい！", value: "yes" },
+    { key: "maybe", label: "あれば嬉しい", value: "maybe" },
+    { key: "no", label: "必要ない", value: "no" },
+  ]},
+  { id: "product", text: "どんな形で思い出を残しますか？", options: [
+    { key: "book", label: "ブック", value: "book" },
+    { key: "panel", label: "パネル", value: "panel" },
+    { key: "other", label: "その他", value: "other" },
+  ]},
+  { id: "bookVolume", text: "ブックのボリューム感は？", dependsOn: { key: "product", value: "book" }, options: [
+    { key: "lite", label: "そこそこ", value: "lite" },
+    { key: "normal", label: "ふつう", value: "normal" },
+    { key: "big", label: "ドーンと！", value: "big" },
+  ]},
+  { id: "familyCostume", text: "ご家族の衣装も追加しますか？", options: [
+    { key: "true", label: "はい（家族も衣装あり）", value: true },
+    { key: "false", label: "いいえ", value: false },
+  ]},
+  // --- 揺らぎ・体験価値 ---
+  { id: "vibe", text: "撮影の雰囲気は？", options: [
+    { key: "classic", label: "王道でしっかり", value: "classic" },
+    { key: "natural", label: "自然体でナチュラル", value: "natural" },
+    { key: "art", label: "ちょっとアートっぽく", value: "art" },
+  ]},
+  { id: "concern", text: "ちょっと心配なことは？", options: [
+    { key: "mood", label: "子どものご機嫌", value: "mood" },
+    { key: "budget", label: "費用のバランス", value: "budget" },
+    { key: "outfit", label: "衣装の数や相性", value: "outfit" },
+    { key: "none", label: "特になし", value: "none" },
+  ]},
+  { id: "timePref", text: "撮影の過ごし方は？", options: [
+    { key: "enjoy", label: "イベントとして楽しみたい", value: "enjoy" },
+    { key: "efficient", label: "効率よくサクッと", value: "efficient" },
+    { key: "slow", label: "思い出をじっくり", value: "slow" },
+  ]},
+  { id: "priority", text: "一番大切にしたいのは？", options: [
+    { key: "balance", label: "価格とのバランス", value: "balance" },
+    { key: "expression", label: "自然な表情", value: "expression" },
+    { key: "lux", label: "豪華さ・見栄え", value: "lux" },
+    { key: "memory", label: "思い出としての価値", value: "memory" },
+  ]},
+];
