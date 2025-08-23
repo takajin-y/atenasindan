@@ -1,5 +1,5 @@
 // lib/v4Adapter.ts
-import V4 from "@/configs/v4.json";
+import V4 from "../configs/v4.json";
 
 // /diagnosis で集める回答（MVP版）
 export type Answers = {
