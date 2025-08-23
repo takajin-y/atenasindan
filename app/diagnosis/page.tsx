@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
-import { flow753_3yo_girl, QA } from "@/lib/questions";
-import { estimateRangeFromV4, talkingPointsFromV4, Answers } from "@/lib/v4Adapter";
+import { flow753_3yo_girl, QA } from "../../lib/questions";
+import { estimateRangeFromV4, talkingPointsFromV4, Answers } from "../../lib/v4Adapter";
 
 export default function Page() {
   const [answers, setAnswers] = useState<Answers>({});
